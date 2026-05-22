@@ -16,10 +16,11 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+# Render injects the listening port via $PORT (default 10000); EXPOSE
+# matches it so the platform's port detection is unambiguous.
+EXPOSE 10000
 
-# Hosts such as Render inject the listening port via $PORT.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -f "http://localhost:${PORT:-8000}/health" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -f "http://localhost:${PORT:-10000}/health" || exit 1
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]

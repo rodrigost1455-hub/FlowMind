@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -23,11 +24,23 @@ log = get_logger("main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup / shutdown — bootstrap DB, warm the model registry."""
+    """Startup / shutdown — bootstrap DB, warm the model registry.
+
+    Startup work is best-effort: a slow or unreachable database must not
+    keep the app from binding its port. Hosts like Render fail the deploy
+    if the port does not open promptly, so DB bootstrap is time-boxed and
+    its failure is logged rather than fatal.
+    """
     configure_logging()
     log.info("Starting %s (%s)", settings.PROJECT_NAME, settings.ENVIRONMENT)
-    await init_db()
-    get_model_registry()  # eager-load ML models so first request is fast
+    try:
+        await asyncio.wait_for(init_db(), timeout=25)
+    except Exception as exc:  # noqa: BLE001
+        log.error("Database bootstrap skipped (%s) — continuing startup", exc)
+    try:
+        get_model_registry()  # eager-load ML models so first request is fast
+    except Exception as exc:  # noqa: BLE001
+        log.error("Model registry load failed (%s) — continuing", exc)
     log.info("FlowMind backend ready")
     yield
     await close_cache()
