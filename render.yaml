@@ -3,14 +3,12 @@
 #   New + → Blueprint → select this repo.
 # Render reads this file and provisions every service below.
 #
-# Cost: API (free) + PostgreSQL (free) + Redis (free) are $0.
+# Database: hosted on Neon (free, permanent). Set DATABASE_URL_OVERRIDE
+# in the Render dashboard with the Neon connection string — the app
+# normalises it for asyncpg automatically.
+#
+# Cost: API (free) + Redis (free) are $0.
 #       The Celery worker has no free plan → "starter" (~$7/mo).
-
-databases:
-  - name: flowmind-db
-    plan: free                 # 1 GB — note: free Postgres is deleted after 30 days
-    databaseName: flowmind
-    user: flowmind
 
 services:
   # ── Redis (broker + cache) ─────────────────────────────────────
@@ -35,24 +33,16 @@ services:
         value: "false"
       - key: SECRET_KEY
         generateValue: true            # Render generates a strong secret
-      - key: POSTGRES_HOST
-        fromDatabase: { name: flowmind-db, property: host }
-      - key: POSTGRES_PORT
-        fromDatabase: { name: flowmind-db, property: port }
-      - key: POSTGRES_USER
-        fromDatabase: { name: flowmind-db, property: user }
-      - key: POSTGRES_PASSWORD
-        fromDatabase: { name: flowmind-db, property: password }
-      - key: POSTGRES_DB
-        fromDatabase: { name: flowmind-db, property: database }
+      # Neon connection string — paste it in the Render dashboard.
+      - key: DATABASE_URL_OVERRIDE
+        sync: false
       - key: REDIS_URL
         fromService: { type: redis, name: flowmind-redis, property: connectionString }
       - key: CELERY_BROKER_URL
         fromService: { type: redis, name: flowmind-redis, property: connectionString }
       - key: CELERY_RESULT_BACKEND
         fromService: { type: redis, name: flowmind-redis, property: connectionString }
-      # Set this in the Render dashboard once the frontend URL exists.
-      # Must be a JSON array, e.g. ["https://flowmind.vercel.app"]
+      # Set this once the frontend URL exists, e.g. ["https://flowmind.vercel.app"]
       - key: BACKEND_CORS_ORIGINS
         sync: false
 
@@ -72,16 +62,9 @@ services:
         value: "false"
       - key: SECRET_KEY
         fromService: { type: web, name: flowmind-api, envVarKey: SECRET_KEY }
-      - key: POSTGRES_HOST
-        fromDatabase: { name: flowmind-db, property: host }
-      - key: POSTGRES_PORT
-        fromDatabase: { name: flowmind-db, property: port }
-      - key: POSTGRES_USER
-        fromDatabase: { name: flowmind-db, property: user }
-      - key: POSTGRES_PASSWORD
-        fromDatabase: { name: flowmind-db, property: password }
-      - key: POSTGRES_DB
-        fromDatabase: { name: flowmind-db, property: database }
+      # Same Neon connection string as the web service.
+      - key: DATABASE_URL_OVERRIDE
+        sync: false
       - key: REDIS_URL
         fromService: { type: redis, name: flowmind-redis, property: connectionString }
       - key: CELERY_BROKER_URL

@@ -3,9 +3,28 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import urlsplit, urlunsplit
 
 from pydantic import Field, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _normalize_async_dsn(raw: str) -> str:
+    """Coerce any Postgres DSN into an asyncpg-compatible URL.
+
+    Managed providers (Neon, Supabase, Render) hand out `postgres://` /
+    `postgresql://` URLs carrying libpq-only query params such as
+    ``sslmode`` and ``channel_binding`` — asyncpg rejects those. This
+    rewrites the scheme to ``postgresql+asyncpg`` and replaces the query
+    with just ``ssl=require`` (every managed provider mandates TLS).
+    Non-Postgres DSNs (e.g. the SQLite URL used by tests) pass through.
+    """
+    parts = urlsplit(raw)
+    if parts.scheme in ("postgres", "postgresql", "postgresql+psycopg2", "postgresql+asyncpg"):
+        return urlunsplit(
+            ("postgresql+asyncpg", parts.netloc, parts.path, "ssl=require", "")
+        )
+    return raw
 
 
 class Settings(BaseSettings):
@@ -56,8 +75,10 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def DATABASE_URL(self) -> str:
+        # A managed-provider URL (Neon, Supabase, ...) takes precedence;
+        # otherwise the DSN is assembled from the POSTGRES_* parts.
         if self.DATABASE_URL_OVERRIDE:
-            return self.DATABASE_URL_OVERRIDE
+            return _normalize_async_dsn(self.DATABASE_URL_OVERRIDE)
         return str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -73,7 +94,9 @@ class Settings(BaseSettings):
     @property
     def SYNC_DATABASE_URL(self) -> str:
         """Sync DSN used by Alembic and Celery workers."""
-        return self.DATABASE_URL.replace("+asyncpg", "+psycopg2")
+        return self.DATABASE_URL.replace("+asyncpg", "+psycopg2").replace(
+            "ssl=require", "sslmode=require"
+        )
 
 
 @lru_cache
