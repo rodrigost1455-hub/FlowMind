@@ -179,7 +179,9 @@ def train_savings_model(feature_df, txn_df) -> dict:
 def train_all() -> dict[str, dict]:
     """Run every training pipeline end-to-end."""
     log.info("Generating synthetic training dataset ...")
-    feature_df, txn_df = generate_synthetic_dataset()
+    # 30 users/archetype keeps peak memory within a 512MB worker while
+    # still giving the models enough labelled examples to learn from.
+    feature_df, txn_df = generate_synthetic_dataset(users_per_archetype=30)
     log.info("Dataset: %d users, %d transactions", len(feature_df), len(txn_df))
 
     return {
