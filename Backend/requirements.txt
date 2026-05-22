@@ -16,9 +16,8 @@ psycopg2-binary==2.9.10
 alembic==1.14.0
 
 # Auth / security
-passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
 pyjwt==2.10.1
-python-jose[cryptography]==3.3.0
 
 # Cache / broker
 redis==5.2.1
