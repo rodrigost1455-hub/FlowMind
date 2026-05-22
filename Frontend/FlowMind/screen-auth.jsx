@@ -1,7 +1,62 @@
-// FlowMind — Auth: Login / Register / Forgot
+// FlowMind — Auth: Login / Register / Forgot  (wired to the API)
 
 function AuthScreen({ onAuthed }) {
   const [mode, setMode] = React.useState('login'); // login | register | forgot
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [notice, setNotice] = React.useState('');
+
+  // Switch mode and clear any inline messages.
+  function go(m) {
+    setMode(m);
+    setError('');
+    setNotice('');
+  }
+
+  async function submit() {
+    if (loading) return;
+    setError('');
+    setNotice('');
+
+    // Lightweight client-side checks before hitting the API.
+    if (mode === 'register' && name.trim().length < 1) {
+      return setError('Escribe tu nombre.');
+    }
+    if (!email.trim()) return setError('Escribe tu correo.');
+    if (mode !== 'forgot' && password.length < 8) {
+      return setError('La contraseña debe tener al menos 8 caracteres.');
+    }
+
+    setLoading(true);
+    try {
+      if (mode === 'login') {
+        await API.login(email.trim(), password);
+        onAuthed();
+      } else if (mode === 'register') {
+        await API.register(name.trim(), email.trim(), password);
+        onAuthed();
+      } else {
+        await API.forgotPassword(email.trim());
+        setNotice('Si el correo existe, te enviamos un enlace de recuperación.');
+      }
+    } catch (e) {
+      setError(e.message || 'Algo salió mal. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const ctaLabel = loading
+    ? 'Un momento…'
+    : mode === 'login'
+    ? 'Sign in'
+    : mode === 'register'
+    ? 'Create account'
+    : 'Send reset link';
+
   return (
     <div className="screen" style={{ background: 'var(--bg)' }}>
       <div style={{ position: 'absolute', inset: -40, background: 'var(--grad-aurora)', filter: 'blur(60px)', opacity: 0.45 }}/>
@@ -10,7 +65,7 @@ function AuthScreen({ onAuthed }) {
         <div style={{ padding: '70px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <FlowMindLogo size={40}/>
           {mode !== 'login' && (
-            <button onClick={() => setMode('login')} style={{ color: 'var(--text-2)', fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button onClick={() => go('login')} style={{ color: 'var(--text-2)', fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
               <Icon name="arrowL" size={14}/> Back
             </button>
           )}
@@ -26,18 +81,39 @@ function AuthScreen({ onAuthed }) {
             {mode === 'forgot' && "We'll email you a reset link."}
           </div>
           <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {mode === 'register' && <FloatingInput label="Full name" defaultValue="Alex Morgan" icon={<Icon name="user" size={18}/>}/>}
-            <FloatingInput label="Email" defaultValue="alex@flowmind.app" type="email" icon={<Icon name="mail" size={18}/>}/>
-            {mode !== 'forgot' && <FloatingInput label="Password" type="password" defaultValue="••••••••••" icon={<Icon name="lock" size={18}/>}/>}
+            {mode === 'register' && (
+              <FloatingInput label="Full name" value={name} onChange={setName} icon={<Icon name="user" size={18}/>}/>
+            )}
+            <FloatingInput label="Email" type="email" value={email} onChange={setEmail} icon={<Icon name="mail" size={18}/>}/>
+            {mode !== 'forgot' && (
+              <FloatingInput label="Password" type="password" value={password} onChange={setPassword} icon={<Icon name="lock" size={18}/>}/>
+            )}
             {mode === 'login' && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -4 }}>
-                <button onClick={() => setMode('forgot')} style={{ color: 'var(--blue-soft)', fontSize: 13, fontWeight: 500 }}>Forgot password?</button>
+                <button onClick={() => go('forgot')} style={{ color: 'var(--blue-soft)', fontSize: 13, fontWeight: 500 }}>Forgot password?</button>
               </div>
             )}
           </div>
-          <div style={{ marginTop: 24 }}>
-            <GradButton full onClick={onAuthed}>
-              {mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create account' : 'Send reset link'}
+
+          {/* inline feedback */}
+          {error && (
+            <div style={{
+              marginTop: 16, padding: '12px 14px', borderRadius: 12,
+              background: 'rgba(255,107,122,0.1)', border: '1px solid rgba(255,107,122,0.3)',
+              color: '#FF6B7A', fontSize: 13, fontWeight: 500, lineHeight: 1.4,
+            }}>{error}</div>
+          )}
+          {notice && (
+            <div style={{
+              marginTop: 16, padding: '12px 14px', borderRadius: 12,
+              background: 'rgba(16,217,163,0.1)', border: '1px solid rgba(16,217,163,0.3)',
+              color: '#10D9A3', fontSize: 13, fontWeight: 500, lineHeight: 1.4,
+            }}>{notice}</div>
+          )}
+
+          <div style={{ marginTop: 20, opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
+            <GradButton full onClick={submit}>
+              {ctaLabel}
               <Icon name="arrowR" size={18}/>
             </GradButton>
           </div>
@@ -49,9 +125,9 @@ function AuthScreen({ onAuthed }) {
                 <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }}/>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <BiometricBtn icon={<Icon name="face" size={22}/>}        label="Face ID" onClick={onAuthed}/>
-                <BiometricBtn icon={<Icon name="apple" size={22}/>}       label="Apple"   onClick={onAuthed}/>
-                <BiometricBtn icon={<Icon name="google" size={22}/>}      label="Google"  onClick={onAuthed}/>
+                <BiometricBtn icon={<Icon name="face" size={22}/>}   label="Face ID" onClick={() => setError('Inicio con Face ID: próximamente.')}/>
+                <BiometricBtn icon={<Icon name="apple" size={22}/>}  label="Apple"   onClick={() => setError('Inicio con Apple: próximamente.')}/>
+                <BiometricBtn icon={<Icon name="google" size={22}/>} label="Google"  onClick={() => setError('Inicio con Google: próximamente.')}/>
               </div>
             </>
           )}
@@ -59,23 +135,28 @@ function AuthScreen({ onAuthed }) {
         {/* footer */}
         <div style={{ padding: '18px 28px 30px', textAlign: 'center', fontSize: 13, color: 'var(--text-2)' }}>
           {mode === 'login'
-            ? <>New here? <button onClick={() => setMode('register')} style={{ color: 'var(--blue-soft)', fontWeight: 600 }}>Create account</button></>
+            ? <>New here? <button onClick={() => go('register')} style={{ color: 'var(--blue-soft)', fontWeight: 600 }}>Create account</button></>
             : mode === 'register'
-            ? <>Have an account? <button onClick={() => setMode('login')} style={{ color: 'var(--blue-soft)', fontWeight: 600 }}>Sign in</button></>
-            : <>Remembered it? <button onClick={() => setMode('login')} style={{ color: 'var(--blue-soft)', fontWeight: 600 }}>Sign in</button></>}
+            ? <>Have an account? <button onClick={() => go('login')} style={{ color: 'var(--blue-soft)', fontWeight: 600 }}>Sign in</button></>
+            : <>Remembered it? <button onClick={() => go('login')} style={{ color: 'var(--blue-soft)', fontWeight: 600 }}>Sign in</button></>}
         </div>
       </div>
     </div>
   );
 }
 
-function FloatingInput({ label, type = 'text', defaultValue = '', icon }) {
-  const [v, setV] = React.useState(defaultValue);
+// Controlled when `value`/`onChange` are passed; otherwise self-managed.
+function FloatingInput({ label, type = 'text', defaultValue = '', value, onChange, icon }) {
+  const controlled = value !== undefined;
+  const [internal, setInternal] = React.useState(defaultValue);
+  const v = controlled ? value : internal;
+  const setV = (nv) => (controlled ? onChange(nv) : setInternal(nv));
+
   const [focus, setFocus] = React.useState(false);
   const [show, setShow] = React.useState(false);
   const isPwd = type === 'password';
   const realType = isPwd ? (show ? 'text' : 'password') : type;
-  const active = focus || v.length > 0;
+  const active = focus || (v && v.length > 0);
   return (
     <div style={{
       position: 'relative',

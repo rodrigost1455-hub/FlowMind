@@ -75,10 +75,12 @@ async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONR
 
 
 # ── CORS ─────────────────────────────────────────────────────────
+# The API is stateless — auth is via JWT bearer tokens, never cookies —
+# so a wildcard origin is safe and avoids per-deploy origin management.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
