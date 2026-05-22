@@ -1,0 +1,90 @@
+# ── FlowMind — Render Blueprint ──────────────────────────────────
+# Deploy: push this repo to GitHub, then in Render:
+#   New + → Blueprint → select this repo.
+# Render reads this file and provisions every service below.
+#
+# Cost: API (free) + PostgreSQL (free) + Redis (free) are $0.
+#       The Celery worker has no free plan → "starter" (~$7/mo).
+
+databases:
+  - name: flowmind-db
+    plan: free                 # 1 GB — note: free Postgres is deleted after 30 days
+    databaseName: flowmind
+    user: flowmind
+
+services:
+  # ── Redis (broker + cache) ─────────────────────────────────────
+  - type: redis
+    name: flowmind-redis
+    plan: free                 # 25 MB, no persistence — fine for broker/cache
+    ipAllowList: []            # internal-only access
+
+  # ── FastAPI web service ────────────────────────────────────────
+  - type: web
+    name: flowmind-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Backend/Dockerfile
+    dockerContext: ./Backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true            # Render generates a strong secret
+      - key: POSTGRES_HOST
+        fromDatabase: { name: flowmind-db, property: host }
+      - key: POSTGRES_PORT
+        fromDatabase: { name: flowmind-db, property: port }
+      - key: POSTGRES_USER
+        fromDatabase: { name: flowmind-db, property: user }
+      - key: POSTGRES_PASSWORD
+        fromDatabase: { name: flowmind-db, property: password }
+      - key: POSTGRES_DB
+        fromDatabase: { name: flowmind-db, property: database }
+      - key: REDIS_URL
+        fromService: { type: redis, name: flowmind-redis, property: connectionString }
+      - key: CELERY_BROKER_URL
+        fromService: { type: redis, name: flowmind-redis, property: connectionString }
+      - key: CELERY_RESULT_BACKEND
+        fromService: { type: redis, name: flowmind-redis, property: connectionString }
+      # Set this in the Render dashboard once the frontend URL exists.
+      # Must be a JSON array, e.g. ["https://flowmind.vercel.app"]
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+
+  # ── Celery worker (+ embedded beat scheduler) ──────────────────
+  - type: worker
+    name: flowmind-worker
+    runtime: docker
+    plan: starter                       # no free plan for workers
+    dockerfilePath: ./Backend/Dockerfile
+    dockerContext: ./Backend
+    dockerCommand: celery -A app.core.celery_app.celery worker --beat --loglevel=info
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        fromService: { type: web, name: flowmind-api, envVarKey: SECRET_KEY }
+      - key: POSTGRES_HOST
+        fromDatabase: { name: flowmind-db, property: host }
+      - key: POSTGRES_PORT
+        fromDatabase: { name: flowmind-db, property: port }
+      - key: POSTGRES_USER
+        fromDatabase: { name: flowmind-db, property: user }
+      - key: POSTGRES_PASSWORD
+        fromDatabase: { name: flowmind-db, property: password }
+      - key: POSTGRES_DB
+        fromDatabase: { name: flowmind-db, property: database }
+      - key: REDIS_URL
+        fromService: { type: redis, name: flowmind-redis, property: connectionString }
+      - key: CELERY_BROKER_URL
+        fromService: { type: redis, name: flowmind-redis, property: connectionString }
+      - key: CELERY_RESULT_BACKEND
+        fromService: { type: redis, name: flowmind-redis, property: connectionString }

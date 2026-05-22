@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+*.db
+test_flowmind.db
+mlruns/
+.pytest_cache/
+.ruff_cache/
+.git/
+.gitignore
+tests/
