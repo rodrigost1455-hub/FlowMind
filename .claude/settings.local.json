@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip --version)",
+      "Bash(pip list *)",
+      "Bash(pip show *)",
+      "Bash(python -m pytest -q)",
+      "Bash(python -c \"import fastapi; print\\(fastapi.__version__\\)\")",
+      "Bash(python -m pytest tests/test_ml.py -q)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\Frontend\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\\", \"\"\\) })"
+    ]
+  }
+}
