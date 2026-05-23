@@ -1,4 +1,4 @@
-# FlowMind — Web Client
+# FlowMind — Web Client for You
 
 React + Vite build of the FlowMind web app. Wraps the original browser-only
 prototype (the `.jsx` files at the project root + `FlowMind.html`) in a real
