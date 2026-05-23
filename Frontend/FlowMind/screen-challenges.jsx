@@ -37,7 +37,8 @@ function ChallengesScreen() {
             </div>
             <div style={{ position: 'relative', marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
               {Array.from({ length: 7 }).map((_, i) => {
-                const filled = i < 6;
+                // Fill from the left up to streak (capped at 7 for this week's view).
+                const filled = i < Math.min(M.streak || 0, 7);
                 return (
                   <div key={i} style={{
                     height: 28, borderRadius: 6,
@@ -76,7 +77,7 @@ function ChallengesScreen() {
                     background: 'linear-gradient(90deg, #FFB547, #FF5BA8, #A855F7)',
                     boxShadow: '0 0 12px rgba(255,91,168,0.6)' }}/>
                 </div>
-                <div style={{ marginTop: 5, fontSize: 11, color: 'var(--text-2)' }}>660 XP to Level 8 · Strategist</div>
+                <div style={{ marginTop: 5, fontSize: 11, color: 'var(--text-2)' }}>{Math.max(0, M.xpToNext - M.xp)} XP to Level {M.level + 1}</div>
               </div>
             </div>
           </GlassCard>

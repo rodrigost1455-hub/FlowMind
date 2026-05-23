@@ -1,0 +1,9 @@
+# Netlify alternative to vercel.json — same Vite SPA setup.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

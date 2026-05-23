@@ -35,17 +35,28 @@ function HistoryScreen({ onOpenTxn }) {
           </div>
         </div>
 
-        {/* monthly summary */}
-        <div style={{ padding: '14px 18px 0' }}>
-          <div className="glass" style={{ borderRadius: 20, padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-3)', letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: 600 }}>May spend</div>
-              <div className="tnum" style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.8, marginTop: 2 }}>$3,247.18</div>
-              <div style={{ fontSize: 11, color: 'var(--coral)', marginTop: 2, fontWeight: 600 }}>+$184 vs Apr</div>
+        {/* monthly summary — current month, derived from real transactions */}
+        {(() => {
+          const now = new Date();
+          const monthLabel = now.toLocaleString(undefined, { month: 'long' }) + ' spend';
+          const monthSpend = (M.transactions || [])
+            .filter(t => t.amt < 0)
+            .reduce((s, t) => s + Math.abs(t.amt), 0);
+          const trend = M.balanceTrend && M.balanceTrend.length ? M.balanceTrend.slice(-7) : [0, 0];
+          return (
+            <div style={{ padding: '14px 18px 0' }}>
+              <div className="glass" style={{ borderRadius: 20, padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: 600 }}>{monthLabel}</div>
+                  <div className="tnum" style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.8, marginTop: 2 }}>
+                    ${monthSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <Sparkline data={trend} width={120} height={42} color="#A855F7"/>
+              </div>
             </div>
-            <Sparkline data={[420, 380, 440, 520, 480, 510, 590]} width={120} height={42} color="#A855F7"/>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* filter chips */}
         <div style={{ display: 'flex', gap: 8, padding: '14px 22px 4px', overflowX: 'auto' }} className="no-scrollbar">
@@ -58,6 +69,19 @@ function HistoryScreen({ onOpenTxn }) {
 
         {/* timeline */}
         <div style={{ padding: '8px 18px 0' }}>
+          {Object.keys(groups).length === 0 && (
+            <div className="glass" style={{
+              marginTop: 12, padding: 24, borderRadius: 18, textAlign: 'center',
+              border: '1px dashed rgba(255,255,255,0.10)',
+              background: 'rgba(255,255,255,0.02)',
+            }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>📝</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>No transactions yet</div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6, lineHeight: 1.4 }}>
+                Tap the + button to log your first one. Categories and moods make the insights sharper.
+              </div>
+            </div>
+          )}
           {Object.entries(groups).map(([day, items]) => {
             const total = items.reduce((s, t) => s + t.amt, 0);
             return (

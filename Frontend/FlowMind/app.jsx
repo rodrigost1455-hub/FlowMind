@@ -1,7 +1,7 @@
 // FlowMind — Main App shell
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "stage": "app",
+  "stage": "splash",
   "tab": "home",
   "showInsight": false,
   "showTxn": false,

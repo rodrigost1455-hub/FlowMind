@@ -34,9 +34,11 @@ function AuthScreen({ onAuthed }) {
     try {
       if (mode === 'login') {
         await API.login(email.trim(), password);
+        await hydrateProfile();
         onAuthed();
       } else if (mode === 'register') {
         await API.register(name.trim(), email.trim(), password);
+        await hydrateProfile();
         onAuthed();
       } else {
         await API.forgotPassword(email.trim());
@@ -46,6 +48,24 @@ function AuthScreen({ onAuthed }) {
       setError(e.message || 'Algo salió mal. Intenta de nuevo.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Fetch /auth/me right after auth so the dashboard greeting + profile
+  // tile know the user's name. Best-effort: a failure here doesn't block
+  // the auth flow — the dashboard just falls back to the "Welcome" defaults.
+  async function hydrateProfile() {
+    try {
+      const me = await API.me();
+      window.MOCK.name = (me.full_name || '').split(' ')[0] || '';
+      window.MOCK.email = me.email || '';
+      if (typeof me.monthly_income === 'number') window.MOCK.income = me.monthly_income;
+      if (typeof me.weekly_budget === 'number') window.MOCK.weeklyBudget = me.weekly_budget;
+      if (typeof me.xp === 'number') window.MOCK.xp = me.xp;
+      if (typeof me.level === 'number') window.MOCK.level = me.level;
+      if (typeof me.streak_days === 'number') window.MOCK.streak = me.streak_days;
+    } catch (_) {
+      // Non-fatal — keep blank defaults.
     }
   }
 

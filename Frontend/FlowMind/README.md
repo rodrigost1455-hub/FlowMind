@@ -1,54 +1,104 @@
-# FlowMind — Mobile App
+# FlowMind — Web Client
 
-Expo + React Native + TypeScript client for the FlowMind backend.
+React + Vite build of the FlowMind web app. Wraps the original browser-only
+prototype (the `.jsx` files at the project root + `FlowMind.html`) in a real
+deployable bundle — no more babel-standalone in the browser, no more
+`<script type="text/babel">`.
 
-## Setup
+## Quick start
 
 ```bash
 cd Frontend/FlowMind
 npm install
-npm start
+cp .env.example .env       # edit VITE_API_BASE_URL if needed
+npm run dev                # http://localhost:5173
 ```
 
-Then press `w` to open in a browser, `a` for an Android emulator, `i` for an iOS simulator, or scan the QR with Expo Go on your phone.
+By default the dev server talks to the production backend at
+`https://flowmind-api-0168.onrender.com`. To point at a local backend:
 
-## Configure the API URL
-
-The app talks to the FastAPI backend at `http://localhost:8000` by default. To point at a different host, edit `app.json`:
-
-```json
-"extra": { "apiBaseUrl": "http://192.168.1.42:8000" }
+```bash
+# .env
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-When testing on a real device with Expo Go, `localhost` resolves to the phone — use your machine's LAN IP.
+## Production build
 
-## What's here
+```bash
+npm run build              # outputs to dist/
+npm run preview            # serve dist/ locally to smoke-test
+```
 
-MVP scope: auth (login/register), onboarding (income + budget), dashboard (Financial Health Score™, balance, weekly budget bar, top categories, insight previews), expenses (filter + add modal with mood capture), insights feed (with weekly summary + regenerate), profile (stats + sign out).
+## Deploy
 
-## Demo account
+The project is preconfigured for two zero-config hosts:
 
-If you ran the backend's `scripts/seed_demo.py`, sign in with `demo@flowmind.app` / `demo12345` — the dashboard prefills the form with these credentials.
+| Host    | Config         | One-click |
+|---------|---------------|-----------|
+| Vercel  | `vercel.json`  | `vercel --prod` |
+| Netlify | `netlify.toml` | `netlify deploy --prod` |
+
+Both deploy `dist/` as a static SPA. Set `VITE_API_BASE_URL` in the host's
+environment-variable UI to point at your backend.
+
+## How the wiring works
+
+The original prototype loads ~17 `.jsx` files via `<script type="text/babel">`
+tags. Each one ends with `window.Foo = Foo` so other files can reach it.
+
+We didn't rewrite them. Instead:
+
+- `index.html` loads exactly one module: `/src/main.jsx`.
+- `src/main.jsx` sets `window.React` + `window.ReactDOM` first, then
+  **dynamic-imports** every legacy `.jsx` in dependency order. Dynamic
+  imports run after the surrounding statements — static `import` would have
+  been hoisted and crashed with "React is not defined".
+- `app.jsx` is imported last; it registers `window.App`, which `main.jsx`
+  then hands to `ReactDOM.createRoot(...).render(...)`.
+
+This means **edits to any `.jsx` file go straight into the bundle** with hot
+reload — the existing design surface is untouched.
+
+## Backend integration status
+
+Only the auth flow (`screen-auth.jsx`) currently calls the real backend via
+`api.js`. The dashboard, analytics, history, challenges, and profile screens
+still render `window.MOCK` data. Wiring them to live endpoints (already
+exposed on the API as `/analytics/overview`, `/financial-health/score`,
+`/insights`, `/predictions`, etc.) is a follow-up.
 
 ## Project layout
 
 ```
-src/
-  api/          axios client + per-domain wrappers + types
-  components/   Button, Input, Card, ScoreRing, ExpenseRow, InsightCard
-  contexts/     AuthContext (token storage, signIn/signUp/signOut)
-  navigation/   Root navigator — auth stack ↔ onboarding ↔ main tabs
-  screens/      LoginScreen, RegisterScreen, OnboardingScreen,
-                DashboardScreen, ExpensesScreen, AddExpenseModal,
-                InsightsScreen, ProfileScreen
-  theme/        colors + spacing tokens
-  utils/        format (currency/date) + secure storage wrapper
-  data.ts       category taxonomy (mirrors backend seed)
+Frontend/FlowMind/
+  index.html            ← Vite entry HTML
+  src/main.jsx          ← entry — sets globals, dynamic-imports legacy files
+  vite.config.js
+  vercel.json / netlify.toml
+  package.json
+  styles.css            ← original prototype CSS (unchanged)
+  api.js                ← backend client (added VITE_API_BASE_URL support)
+  data.js               ← mock fixtures
+  app.jsx               ← root App shell
+  primitives.jsx, icons.jsx, charts.jsx, charts2.jsx
+  phone-frame.jsx, ios-frame.jsx, tweaks-panel.jsx
+  dashboard-cards.jsx
+  screen-splash.jsx, screen-onboarding.jsx, screen-auth.jsx,
+  screen-dashboard.jsx, screen-analytics.jsx, screen-add.jsx,
+  screen-history.jsx, screen-challenges.jsx, screen-profile.jsx,
+  screen-modals.jsx
+  FlowMind.html         ← original browser-only prototype, kept for reference
+  debug/                ← design screenshots
+  uploads/              ← reference imagery
 ```
 
-## Notes & gaps
+## Notes
 
-- The backend has no `GET /categories` endpoint yet, so the picker uses a hardcoded mirror of the backend seed list (`src/data.ts`).
-- Logout is client-side only — there's no token revocation endpoint on the backend.
-- Predictions, weekly summaries detail, achievements, and challenges are not wired up. The backend exposes them but they're outside the MVP.
-- Tokens persist in `expo-secure-store` on iOS/Android and `AsyncStorage` on web. The auth interceptor auto-refreshes once on a 401.
+- The `FlowMind.html` file from the original prototype still works if you
+  just want to preview a `.jsx` change in isolation without running Vite —
+  but it loads babel-standalone in the browser and is not what gets
+  deployed.
+- The Tweaks panel in the bottom-right is a designer tool (live jump
+  between stages/tabs, swap palette). It only activates when the host
+  iframe sends `__activate_edit_mode` — outside that environment it stays
+  hidden, so production users won't see it.

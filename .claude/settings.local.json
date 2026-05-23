@@ -7,7 +7,11 @@
       "Bash(python -m pytest -q)",
       "Bash(python -c \"import fastapi; print\\(fastapi.__version__\\)\")",
       "Bash(python -m pytest tests/test_ml.py -q)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\Frontend\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\\", \"\"\\) })"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\Frontend\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\\", \"\"\\) })",
+      "PowerShell($root = \"C:\\\\Users\\\\jeef_\\\\Videos\\\\FlowMind-main\\\\Frontend\\\\FlowMind\"; Remove-Item -Recurse -Force \"$root\\\\src\" -ErrorAction SilentlyContinue; Remove-Item -Force \"$root\\\\App.tsx\",\"$root\\\\babel.config.js\",\"$root\\\\.env.example\",\"$root\\\\tsconfig.json\" -ErrorAction SilentlyContinue; Get-ChildItem -Path $root -Force | Select-Object Name)",
+      "PowerShell(\"OK\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }

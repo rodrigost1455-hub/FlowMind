@@ -5,10 +5,16 @@
 
 window.API = (() => {
   // ── configuration ──────────────────────────────────────────────
-  // Backend base URL. Override by setting window.FLOWMIND_API_BASE
-  // before this script loads (handy for local backend testing).
+  // Backend base URL resolution order:
+  //   1. Vite env: VITE_API_BASE_URL (baked in at build time)
+  //   2. Runtime override: window.FLOWMIND_API_BASE
+  //   3. Default: production Render deployment
+  // `import.meta.env` only exists when this file is loaded as an ES module;
+  // wrap in try/catch so the file still works in the legacy <script> mode.
+  let _envBase;
+  try { _envBase = import.meta.env && import.meta.env.VITE_API_BASE_URL; } catch (_) {}
   const BASE =
-    (window.FLOWMIND_API_BASE || 'https://flowmind-api-0168.onrender.com') +
+    (_envBase || window.FLOWMIND_API_BASE || 'https://flowmind-api-0168.onrender.com') +
     '/api/v1';
 
   const TOKEN_KEY = 'flowmind_access_token';

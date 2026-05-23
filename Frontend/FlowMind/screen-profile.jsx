@@ -3,6 +3,12 @@
 function ProfileScreen() {
   const M = window.MOCK;
   const [showConfig, setShowConfig] = React.useState(false);
+  const displayName = M.name || 'Welcome';
+  const displayEmail = M.email || 'Set your email in settings';
+  const initial = (M.name || M.email || '?').slice(0, 1).toUpperCase();
+  const savedTile = M.saved && M.saved >= 1000
+    ? '$' + (M.saved / 1000).toFixed(1) + 'k'
+    : '$' + (Number(M.saved) || 0).toLocaleString();
   return (
     <React.Fragment>
     <div className="screen" style={{ background: 'var(--bg)' }}>
@@ -33,23 +39,23 @@ function ProfileScreen() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 700, fontSize: 24, color: '#fff',
                 boxShadow: '0 12px 30px -8px rgba(255,91,168,0.55), inset 0 1px 0 rgba(255,255,255,0.4)',
-              }}>A</div>
+              }}>{initial}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.4 }}>Alex Morgan</div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>alex@flowmind.app</div>
+                <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.4 }}>{displayName}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{displayEmail}</div>
                 <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5,
                   padding: '3px 8px', borderRadius: 999,
-                  background: 'linear-gradient(135deg, rgba(255,181,71,0.18), rgba(255,91,168,0.18))',
-                  border: '1px solid rgba(255,181,71,0.32)',
-                  fontSize: 10, fontWeight: 700, color: '#FFCB6F', letterSpacing: 0.4, textTransform: 'uppercase' }}>
-                  <Icon name="bolt" size={9} color="#FFB547"/> Plus member
+                  background: 'linear-gradient(135deg, rgba(79,124,255,0.18), rgba(168,85,247,0.18))',
+                  border: '1px solid rgba(168,85,247,0.32)',
+                  fontSize: 10, fontWeight: 700, color: '#C7B1FF', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                  <Icon name="sparkle" size={9} color="#C084FC"/> Free
                 </div>
               </div>
             </div>
             <div style={{ position: 'relative', marginTop: 14, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
               {[
                 { l: 'Level', v: M.level },
-                { l: 'Saved', v: '$2.1k' },
+                { l: 'Saved', v: savedTile },
                 { l: 'Streak', v: M.streak + 'd' },
               ].map(s => (
                 <div key={s.l} style={{
@@ -68,6 +74,14 @@ function ProfileScreen() {
         {/* goals */}
         <SectionHeader title="Goals" right="+ New"/>
         <div style={{ padding: '0 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {M.goals.length === 0 && (
+            <div className="glass" style={{
+              borderRadius: 16, padding: 16, textAlign: 'center',
+              border: '1px dashed rgba(255,255,255,0.10)',
+              background: 'rgba(255,255,255,0.02)',
+              color: 'var(--text-3)', fontSize: 12.5, lineHeight: 1.5,
+            }}>You haven't set any savings goals yet.</div>
+          )}
           {M.goals.map(g => {
             const pct = g.saved / g.target;
             return (
@@ -93,8 +107,8 @@ function ProfileScreen() {
         <SectionHeader title="Account"/>
         <SettingsGroup items={[
           { icon: 'user', label: 'Personal info', detail: 'Name, email, photo' },
-          { icon: 'wallet', label: 'Connected accounts', detail: '3 banks · 2 cards' },
-          { icon: 'lock', label: 'Security', detail: 'Face ID enabled' },
+          { icon: 'wallet', label: 'Connected accounts', detail: 'No accounts linked' },
+          { icon: 'lock', label: 'Security', detail: 'Password sign-in' },
         ]}/>
 
         <SectionHeader title="Preferences"/>
@@ -108,16 +122,16 @@ function ProfileScreen() {
         <SectionHeader title="Plan"/>
         <div style={{ padding: '0 18px 24px' }}>
           <div className="glass" style={{ borderRadius: 18, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #FFB547, #FF5BA8)',
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #4F7CFF, #A855F7)',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="bolt" size={18}/>
+              <Icon name="sparkle" size={18}/>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>FlowMind Plus</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>$5.99/mo · renews May 24</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Free plan</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>All core features included</div>
             </div>
             <button style={{ padding: '7px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600,
-              background: 'rgba(255,181,71,0.15)', color: '#FFCB6F', border: '1px solid rgba(255,181,71,0.3)' }}>Manage</button>
+              background: 'rgba(168,85,247,0.15)', color: '#C7B1FF', border: '1px solid rgba(168,85,247,0.3)' }}>Upgrade</button>
           </div>
         </div>
       </div>

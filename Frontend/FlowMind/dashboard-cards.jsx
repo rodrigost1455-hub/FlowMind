@@ -1,8 +1,22 @@
 // FlowMind — Dashboard cards
 
+// Format a number like the original "$2,340.18" — integer + smaller decimals.
+function _moneyParts(n) {
+  const v = Number(n) || 0;
+  const abs = Math.abs(v).toFixed(2);
+  const [int, dec] = abs.split('.');
+  return {
+    sign: v < 0 ? '-' : '',
+    int: Number(int).toLocaleString(),
+    dec,
+  };
+}
+
 function HeroBalance({ parallax = { x:0, y:0 } }) {
   const M = window.MOCK;
   const [hidden, setHidden] = React.useState(false);
+  const balance = _moneyParts(M.balance);
+  const fmt = (n) => '$' + Math.abs(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
   return (
     <div style={{
       position: 'relative', borderRadius: 28, overflow: 'hidden',
@@ -41,12 +55,12 @@ function HeroBalance({ parallax = { x:0, y:0 } }) {
         </div>
         <div style={{ marginTop: 14, fontSize: 12, opacity: 0.85, letterSpacing: 0.4, textTransform: 'uppercase' }}>Remaining this week</div>
         <div style={{ fontSize: 46, fontWeight: 700, letterSpacing: -2, marginTop: 4, lineHeight: 1 }} className="tnum">
-          {hidden ? '••••••' : <>$2,340<span style={{ fontSize: 24, opacity: 0.75 }}>.18</span></>}
+          {hidden ? '••••••' : <>{balance.sign}${balance.int}<span style={{ fontSize: 24, opacity: 0.75 }}>.{balance.dec}</span></>}
         </div>
         <div style={{ display: 'flex', gap: 18, marginTop: 18 }}>
-          <Stat label="Income" value="+$5,840" tint="rgba(255,255,255,0.16)"/>
-          <Stat label="Saved" value="$1,420" tint="rgba(255,255,255,0.16)"/>
-          <Stat label="Spent" value="$989" tint="rgba(255,255,255,0.16)"/>
+          <Stat label="Income" value={(M.income > 0 ? '+' : '') + fmt(M.income)} tint="rgba(255,255,255,0.16)"/>
+          <Stat label="Saved"  value={fmt(M.saved)} tint="rgba(255,255,255,0.16)"/>
+          <Stat label="Spent"  value={fmt(M.spentWk)} tint="rgba(255,255,255,0.16)"/>
         </div>
       </div>
     </div>
@@ -64,18 +78,29 @@ function Stat({ label, value, tint }) {
 
 function HealthCard() {
   const M = window.MOCK;
+  // Verdict tracks where the user stands so a 0 score doesn't claim "THRIVING".
+  const verdict =
+    M.healthScore >= 85 ? 'THRIVING' :
+    M.healthScore >= 70 ? 'STRONG' :
+    M.healthScore >= 50 ? 'STEADY' :
+    M.healthScore > 0   ? 'BUILDING' :
+                          'NEW';
+  const delta = M.healthDelta || 0;
+  const deltaColor = delta > 0 ? 'var(--emerald)' : delta < 0 ? 'var(--coral)' : 'var(--text-3)';
   return (
     <GlassCard style={{ padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, letterSpacing: 0.4, textTransform: 'uppercase' }}>Health score</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, color: 'var(--emerald)', fontSize: 12, fontWeight: 700 }}>
-          <Icon name="arrowUp" size={12}/> +{M.healthDelta}
-        </div>
+        {delta !== 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, color: deltaColor, fontSize: 12, fontWeight: 700 }}>
+            <Icon name={delta > 0 ? 'arrowUp' : 'arrowDn'} size={12}/> {delta > 0 ? '+' : ''}{delta}
+          </div>
+        )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 6 }}>
         <ProgressRing value={M.healthScore} size={108} stroke={10}
           label={<span><span style={{ fontSize: 28 }}>{M.healthScore}</span><span style={{ fontSize: 13, color: 'var(--text-3)' }}>/100</span></span>}
-          sub="THRIVING"
+          sub={verdict}
         />
       </div>
     </GlassCard>
@@ -143,11 +168,13 @@ function InsightCard({ insight, onClick }) {
 }
 
 function BudgetBar({ spent, budget }) {
-  const pct = Math.min(1, spent / budget);
+  // Guard against the "no budget set yet" case so the bar renders empty
+  // instead of NaN-wide.
+  const pct = budget > 0 ? Math.min(1, spent / budget) : 0;
   return (
     <div style={{ width: 130 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-3)', marginBottom: 4, fontWeight: 600 }}>
-        <span>${Math.round(spent)}</span><span>${budget}</span>
+        <span>${Math.round(spent)}</span><span>${budget || '—'}</span>
       </div>
       <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
         <div style={{ width: (pct * 100) + '%', height: '100%',

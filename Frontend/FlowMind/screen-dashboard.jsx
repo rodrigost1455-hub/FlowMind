@@ -55,9 +55,13 @@ function DashboardScreen({ onAddExpense, onOpenInsight, onOpenTxn }) {
 
         {/* AI insights */}
         <SectionHeader title="AI insights" right="Personalized" rightTint="#A855F7"/>
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 4px', scrollSnapType: 'x mandatory' }} className="no-scrollbar">
-          {M.insights.map(i => <InsightCard key={i.id} insight={i} onClick={() => onOpenInsight(i)}/>)}
-        </div>
+        {M.insights.length === 0 ? (
+          <EmptyHint copy="Insights appear once you've logged a few transactions." icon="sparkle"/>
+        ) : (
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 4px', scrollSnapType: 'x mandatory' }} className="no-scrollbar">
+            {M.insights.map(i => <InsightCard key={i.id} insight={i} onClick={() => onOpenInsight(i)}/>)}
+          </div>
+        )}
 
         {/* week chart */}
         <SectionHeader title="This week" right={`$${M.spentWk.toFixed(0)} / $${M.weeklyBudget}`}/>
@@ -66,7 +70,9 @@ function DashboardScreen({ onAddExpense, onOpenInsight, onOpenTxn }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Daily average</div>
-                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5 }} className="tnum">$141</div>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5 }} className="tnum">
+                  ${(((M.weekSpend || []).reduce((s, v) => s + v, 0)) / 7).toFixed(0)}
+                </div>
               </div>
               <BudgetBar spent={M.spentWk} budget={M.weeklyBudget}/>
             </div>
@@ -76,15 +82,23 @@ function DashboardScreen({ onAddExpense, onOpenInsight, onOpenTxn }) {
 
         {/* goals */}
         <SectionHeader title="Goals" right="See all"/>
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 4px' }} className="no-scrollbar">
-          {M.goals.map(g => <GoalCard key={g.id} goal={g}/>)}
-        </div>
+        {M.goals.length === 0 ? (
+          <EmptyHint copy="Create a savings goal to start tracking progress." icon="target"/>
+        ) : (
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 4px' }} className="no-scrollbar">
+            {M.goals.map(g => <GoalCard key={g.id} goal={g}/>)}
+          </div>
+        )}
 
         {/* recent */}
-        <SectionHeader title="Recent" right="View all"/>
-        <div style={{ padding: '0 18px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {M.transactions.slice(0, 4).map(t => <TxnRow key={t.id} txn={t} onClick={() => onOpenTxn(t)}/>)}
-        </div>
+        <SectionHeader title="Recent" right={M.transactions.length ? 'View all' : null}/>
+        {M.transactions.length === 0 ? (
+          <EmptyHint copy="Tap the + button to log your first transaction." icon="plus"/>
+        ) : (
+          <div style={{ padding: '0 18px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {M.transactions.slice(0, 4).map(t => <TxnRow key={t.id} txn={t} onClick={() => onOpenTxn(t)}/>)}
+          </div>
+        )}
       </div>
       {showNotifs && <NotificationPanel onClose={() => setShowNotifs(false)} onOpenTxn={onOpenTxn} onOpenInsight={onOpenInsight}/>}
     </div>
@@ -129,9 +143,31 @@ function SectionHeader({ title, right, rightTint }) {
   );
 }
 
+function EmptyHint({ copy, icon = 'sparkle' }) {
+  return (
+    <div style={{ padding: '0 18px 4px' }}>
+      <div className="glass" style={{
+        borderRadius: 18, padding: '14px 16px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        border: '1px dashed rgba(255,255,255,0.10)',
+        background: 'rgba(255,255,255,0.02)',
+      }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 10,
+          background: 'rgba(168,85,247,0.14)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#C084FC',
+        }}><Icon name={icon} size={15}/></div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.4 }}>{copy}</div>
+      </div>
+    </div>
+  );
+}
+
 window.DashboardScreen = DashboardScreen;
 window.IconBtn = IconBtn;
 window.SectionHeader = SectionHeader;
+window.EmptyHint = EmptyHint;
 
 // ─── Notification Panel ────────────────────────────────────
 function NotificationPanel({ onClose, onOpenTxn, onOpenInsight }) {
